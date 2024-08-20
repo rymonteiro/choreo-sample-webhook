@@ -10,12 +10,19 @@ service /passkit on webhookListener {
         log:printInfo("Received a webhook event from PassKit");
 
         // Extract JSON payload
-        json payload = check req.getJsonPayload();
-        log:printInfo("Payload received: " + payload.toString());
+        json|error payloadResult = req.getJsonPayload();
+        if (payloadResult is error) {
+            // Handle JSON parsing error
+            log:printError("Failed to parse JSON payload", err = payloadResult);
+            check caller->respond("Invalid JSON payload", 400);
+            return;
+        }
+
+        json payload = payloadResult;
 
         // Process the webhook event (You can handle specific events based on the payload)
-        if (payload.hasKey("eventType")) {
-            string eventType = check payload.eventType.toString();
+        if (payload is map<json> && payload.hasKey("eventType")) {
+            string eventType = payload["eventType"].toString();
             if eventType == "pass.updated" {
                 log:printInfo("Processing pass update event");
                 // Add your logic for handling pass updates
@@ -23,6 +30,10 @@ service /passkit on webhookListener {
                 log:printInfo("Processing pass installed event");
                 // Add your logic for handling pass installations
             }
+        } else {
+            log:printError("Invalid payload format or missing eventType");
+            check caller->respond("Invalid payload", 400);
+            return;
         }
 
         // Send a response back to PassKit
