@@ -13,8 +13,8 @@ service /passkit on webhookListener {
         json|error payloadResult = req.getJsonPayload();
         if (payloadResult is error) {
             // Handle JSON parsing error
-            log:printError("Failed to parse JSON payload", err = payloadResult);
-            check caller->respond("Invalid JSON payload", 400);
+            log:printError("Failed to parse JSON payload: " + payloadResult.message());
+            check caller->respond("Invalid JSON payload");
             return;
         }
 
@@ -32,7 +32,7 @@ service /passkit on webhookListener {
             }
         } else {
             log:printError("Invalid payload format or missing eventType");
-            check caller->respond("Invalid payload", 400);
+            check caller->respond("Invalid payload");
             return;
         }
 
